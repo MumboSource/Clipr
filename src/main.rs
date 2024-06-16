@@ -63,5 +63,5 @@ fn main() {
 
     println!("API Key: {}", api_key);
 
-    let e_loop = event_loop.run_app::<App>(&mut App {tray_icon: tray, api_key: api_key});
+    let _e_loop = event_loop.run_app::<App>(&mut App {tray_icon: tray, api_key: api_key});
 }
