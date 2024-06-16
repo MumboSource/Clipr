@@ -1,7 +1,6 @@
 use std::env;
 
-use tray_icon::{Icon, TrayIconBuilder, TrayIconEvent};
-use tray_icon::TrayIcon;
+use tray_icon::{menu::{Menu, MenuEvent, MenuItemBuilder}, Icon, TrayIcon, TrayIconBuilder, TrayIconEvent};
 use winit::event_loop::EventLoop;
 use winit::application::ApplicationHandler;
 
@@ -35,12 +34,29 @@ fn main() {
     println!("Icon path: {:?}", path);
     let icon: Icon = Icon::from_path(path, None).unwrap();
 
+    let tray_menu = Menu::new();
+
+    let upload_button = MenuItemBuilder::new()
+        .text("Upload")
+        .enabled(true)
+        .build();
+
+    tray_menu.append(&upload_button).unwrap();
+
     let tray = TrayIconBuilder::new()
-        .with_tooltip("system-tray - tray icon library!")
+        .with_tooltip("Clipr")
         .with_icon(icon)
+        .with_menu(Box::new(tray_menu))
         .build()
         .unwrap();
 
-    // Same thing as TrayIcon a
-    let b = event_loop.run_app::<App>(&mut App {tray_icon: tray});
+    let e_loop = event_loop.run_app::<App>(&mut App {tray_icon: tray});
+
+    if let Ok(event) = TrayIconEvent::receiver().try_recv() {
+        println!("tray event: {:?}", event);
+    }
+
+    if let Ok(event) = MenuEvent::receiver().try_recv() {
+        println!("menu event: {:?}", event);
+    }
 }
