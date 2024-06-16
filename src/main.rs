@@ -26,7 +26,7 @@ fn main() {
 
     let icon: Icon = Icon::from_path("D:\\Code\\RUST\\Clipr\\src\\icon.ico", None).unwrap();
 
-    TrayIconBuilder::new()
+    let _ = TrayIconBuilder::new()
         .with_tooltip("system-tray - tray icon library!")
         .with_icon(icon)
         .build()
