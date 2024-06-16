@@ -29,6 +29,7 @@ fn main() {
     let mut path = env::current_exe().unwrap();
 
     path.pop();
+    path.push("assets");
     path.push("icon.ico");
 
     println!("Icon path: {:?}", path);
