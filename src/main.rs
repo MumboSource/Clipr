@@ -1,3 +1,6 @@
+use std::path::Path;
+use std::{fs};
+
 use tray_icon::{Icon, TrayIconBuilder, TrayIconEvent};
 use winit::event_loop::EventLoop;
 use winit::application::ApplicationHandler;
@@ -24,13 +27,15 @@ impl ApplicationHandler for App {
 fn main() {
     let event_loop = EventLoop::new().unwrap();
 
-    let icon: Icon = Icon::from_path("D:\\Code\\RUST\\Clipr\\src\\icon.ico", None).unwrap();
+    let icon: Icon = Icon::from_path(Path::new("./src/icon.ico"), None).unwrap();
 
-    let _ = TrayIconBuilder::new()
+    // You have to assign it to a var that doesn't begin with underscore (ignore warning)
+    let a = TrayIconBuilder::new()
         .with_tooltip("system-tray - tray icon library!")
         .with_icon(icon)
         .build()
         .unwrap();
 
-    let _ = event_loop.run_app::<App>(&mut App {});
+    // Same thing as TrayIcon a
+    let b = event_loop.run_app::<App>(&mut App {});
 }
