@@ -6,6 +6,7 @@ use winit::application::ApplicationHandler;
 
 struct App {
     tray_icon: TrayIcon,
+    api_key: String,
 }
 
 impl ApplicationHandler for App {
@@ -42,6 +43,7 @@ fn main() {
     let mut path = env::current_exe().unwrap();
 
     path.pop();
+    path.push("assets");
     path.push("icon.ico");
 
     println!("Icon path: {:?}", path);
@@ -62,5 +64,16 @@ fn main() {
         .build()
         .unwrap();
 
-    let e_loop = event_loop.run_app::<App>(&mut App {tray_icon: tray});
+    let mut api_key_path = env::current_exe().unwrap();
+
+    api_key_path.pop();
+    api_key_path.push("assets");
+    api_key_path.push("api_key.txt");
+
+    let api_key = std::fs::read_to_string(api_key_path)
+        .expect("Couldn't find api_key for hastebin.com in assets/api_key.txt. Please create one.");
+
+    println!("API Key: {}", api_key);
+
+    let _e_loop = event_loop.run_app::<App>(&mut App {tray_icon: tray, api_key: api_key});
 }
