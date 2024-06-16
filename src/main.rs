@@ -1,9 +1,12 @@
+use std::env;
+
 use tray_icon::{Icon, TrayIconBuilder, TrayIconEvent};
+use tray_icon::TrayIcon;
 use winit::event_loop::EventLoop;
 use winit::application::ApplicationHandler;
 
 struct App {
-
+    tray_icon: TrayIcon,
 }
 
 impl ApplicationHandler for App {
@@ -24,9 +27,15 @@ impl ApplicationHandler for App {
 fn main() {
     let event_loop = EventLoop::new().unwrap();
 
-    let icon: Icon = Icon::from_path("D:\\Code\\RUST\\Clipr\\src\\icon.ico", None).unwrap();
+    let mut path = env::current_exe().unwrap();
 
-    let _ = TrayIconBuilder::new()
+    path.pop();
+    path.push("icon.ico");
+
+    println!("Icon path: {:?}", path);
+    let icon: Icon = Icon::from_path(path, None).unwrap();
+
+    let tray = TrayIconBuilder::new()
         .with_tooltip("system-tray - tray icon library!")
         .with_icon(icon)
         .build()
