@@ -41,5 +41,6 @@ fn main() {
         .build()
         .unwrap();
 
-    let _ = event_loop.run_app::<App>(&mut App {});
+    // Same thing as TrayIcon a
+    let b = event_loop.run_app::<App>(&mut App {});
 }
