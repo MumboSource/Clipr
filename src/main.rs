@@ -1,6 +1,6 @@
 use std::env;
 
-use tray_icon::{menu::{Menu, MenuEvent, MenuItemBuilder}, Icon, TrayIcon, TrayIconBuilder, TrayIconEvent};
+use tray_icon::{menu::{Menu, MenuEvent, MenuItemBuilder}, Icon, MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent};
 use winit::event_loop::EventLoop;
 use winit::application::ApplicationHandler;
 
@@ -10,7 +10,7 @@ struct App {
 
 impl ApplicationHandler for App {
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
-
+        
     }
 
     fn window_event(
@@ -19,7 +19,20 @@ impl ApplicationHandler for App {
             window_id: winit::window::WindowId,
             event: winit::event::WindowEvent,
         ) {
+            
+    }
 
+    fn about_to_wait(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
+        if let Ok(event) = TrayIconEvent::receiver().try_recv() {
+            if let TrayIconEvent::Click{button, button_state, ..} = event {
+                
+                match button {
+                    MouseButton::Left => println!("Left"),
+                    MouseButton::Middle => println!("Middle"),
+                    MouseButton::Right => println!("Right"),
+                }
+            }
+        }
     }
 }
 
@@ -46,17 +59,8 @@ fn main() {
     let tray = TrayIconBuilder::new()
         .with_tooltip("Clipr")
         .with_icon(icon)
-        .with_menu(Box::new(tray_menu))
         .build()
         .unwrap();
 
     let e_loop = event_loop.run_app::<App>(&mut App {tray_icon: tray});
-
-    if let Ok(event) = TrayIconEvent::receiver().try_recv() {
-        println!("tray event: {:?}", event);
-    }
-
-    if let Ok(event) = MenuEvent::receiver().try_recv() {
-        println!("menu event: {:?}", event);
-    }
 }
