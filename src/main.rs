@@ -1,6 +1,7 @@
+#![windows_subsystem = "windows"]
 use std::env;
 
-use tray_icon::{Icon, MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent};
+use tray_icon::{menu::{Menu, MenuEvent, MenuItemBuilder}, Icon, MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use winit::event_loop::EventLoop;
 use winit::application::ApplicationHandler;
 
@@ -8,10 +9,8 @@ use clipboard::{ClipboardContext, ClipboardProvider};
 use reqwest::blocking::Client;
 
 use serde::{Deserialize, Serialize};
-use serde_json::Result;
 
 struct App {
-    tray_icon: TrayIcon,
     api_key: String,
     http_client: Client,
     clipboard_context: ClipboardContext
@@ -36,6 +35,7 @@ impl ApplicationHandler for App {
             
     }
 
+    
     fn about_to_wait(&mut self, _event_loop: &winit::event_loop::ActiveEventLoop) {
         if let Ok(event) = TrayIconEvent::receiver().try_recv() {
             if let TrayIconEvent::Click{button, button_state, ..} = event {
@@ -46,7 +46,6 @@ impl ApplicationHandler for App {
                             
                             let contents = self.clipboard_context.get_contents().unwrap();
 
-                            println!("Posting to hastebin.com");
                             let hastebin_response = self.http_client.post("https://hastebin.com/documents")
                                 .header("Content-Type", "text/plain")
                                 .header("Authorization", format!("Bearer {}", self.api_key))
@@ -65,8 +64,14 @@ impl ApplicationHandler for App {
                 }
             }
         }
+
+        if let Ok(_event) = MenuEvent::receiver().try_recv() {
+            // No need to distinguish between menu items since theres only one, no possible events but a click
+            std::process::exit(0);
+        }
     }
 }
+
 
 fn main() {
     let event_loop = EventLoop::new().unwrap();
@@ -77,12 +82,21 @@ fn main() {
     path.push("assets");
     path.push("icon.ico");
 
-    println!("Icon path: {:?}", path);
     let icon: Icon = Icon::from_path(path, None).unwrap();
 
-    let tray = TrayIconBuilder::new()
+    let menu = Menu::new();
+    let quit_item = MenuItemBuilder::new()
+        .text("Quit")
+        .enabled(true)
+        .build();
+
+    menu.append(&quit_item).expect("Couldn't append menu item to menu");
+
+    // Throwing away the tray variable disables the tray icon
+    let _tray = TrayIconBuilder::new()
         .with_tooltip("Clipr")
         .with_icon(icon)
+        .with_menu(Box::new(menu))
         .build()
         .unwrap();
 
@@ -95,13 +109,10 @@ fn main() {
     let api_key = std::fs::read_to_string(api_key_path)
         .expect("Couldn't find api_key for hastebin.com in assets/api_key.txt. Please create one.");
 
-    println!("API Key: {}", api_key);
-
     let http_client = Client::new();
-    let mut clipboard_context: ClipboardContext = ClipboardProvider::new().unwrap();
+    let clipboard_context: ClipboardContext = ClipboardProvider::new().unwrap();
 
     let _e_loop = event_loop.run_app::<App>(&mut App {
-        tray_icon: tray, 
         api_key: api_key, 
         http_client: http_client, 
         clipboard_context: clipboard_context
