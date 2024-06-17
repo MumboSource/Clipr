@@ -1,36 +1,67 @@
 use std::env;
 
-use tray_icon::{menu::{Menu, MenuEvent, MenuItemBuilder}, Icon, MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent};
+use tray_icon::{Icon, MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent};
 use winit::event_loop::EventLoop;
 use winit::application::ApplicationHandler;
+
+use clipboard::{ClipboardContext, ClipboardProvider};
+use reqwest::blocking::Client;
+
+use serde::{Deserialize, Serialize};
+use serde_json::Result;
 
 struct App {
     tray_icon: TrayIcon,
     api_key: String,
+    http_client: Client,
+    clipboard_context: ClipboardContext
+}
+
+#[derive(Serialize, Deserialize)]
+struct HashResponse {
+    key: String
 }
 
 impl ApplicationHandler for App {
-    fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
+    fn resumed(&mut self, _event_loop: &winit::event_loop::ActiveEventLoop) {
         
     }
 
     fn window_event(
             &mut self,
-            event_loop: &winit::event_loop::ActiveEventLoop,
-            window_id: winit::window::WindowId,
-            event: winit::event::WindowEvent,
+            _event_loop: &winit::event_loop::ActiveEventLoop,
+            _window_id: winit::window::WindowId,
+            _event: winit::event::WindowEvent,
         ) {
             
     }
 
-    fn about_to_wait(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
+    fn about_to_wait(&mut self, _event_loop: &winit::event_loop::ActiveEventLoop) {
         if let Ok(event) = TrayIconEvent::receiver().try_recv() {
             if let TrayIconEvent::Click{button, button_state, ..} = event {
                 
                 match button {
-                    MouseButton::Left => println!("Left"),
-                    MouseButton::Middle => println!("Middle"),
-                    MouseButton::Right => println!("Right"),
+                    MouseButton::Left => {
+                        if button_state == MouseButtonState::Up {
+                            
+                            let contents = self.clipboard_context.get_contents().unwrap();
+
+                            println!("Posting to hastebin.com");
+                            let hastebin_response = self.http_client.post("https://hastebin.com/documents")
+                                .header("Content-Type", "text/plain")
+                                .header("Authorization", format!("Bearer {}", self.api_key))
+                                .body(contents)
+                                .send()
+                                .unwrap();
+
+
+                            let contents : HashResponse = serde_json::from_str(&hastebin_response.text().unwrap()).unwrap();
+
+                            self.clipboard_context.set_contents(format!("https://hastebin.com/share/{}", contents.key)).expect("Couldn't set clipboard contents");
+                        }
+                    },
+
+                    _ => {}
                 }
             }
         }
@@ -49,15 +80,6 @@ fn main() {
     println!("Icon path: {:?}", path);
     let icon: Icon = Icon::from_path(path, None).unwrap();
 
-    let tray_menu = Menu::new();
-
-    let upload_button = MenuItemBuilder::new()
-        .text("Upload")
-        .enabled(true)
-        .build();
-
-    tray_menu.append(&upload_button).unwrap();
-
     let tray = TrayIconBuilder::new()
         .with_tooltip("Clipr")
         .with_icon(icon)
@@ -75,5 +97,14 @@ fn main() {
 
     println!("API Key: {}", api_key);
 
-    let _e_loop = event_loop.run_app::<App>(&mut App {tray_icon: tray, api_key: api_key});
+    let http_client = Client::new();
+    let mut clipboard_context: ClipboardContext = ClipboardProvider::new().unwrap();
+
+    let _e_loop = event_loop.run_app::<App>(&mut App {
+        tray_icon: tray, 
+        api_key: api_key, 
+        http_client: http_client, 
+        clipboard_context: clipboard_context
+    });
+
 }
